@@ -12,6 +12,7 @@
 #include <system_error>
 #include <unistd.h>
 #include <mutex>
+#include <type_traits>
 
 using namespace std;
 
@@ -220,7 +221,10 @@ void test_lambda() {
     int ret = count_if(v.begin(), v.end(), f3);
     cout << ret << endl;
     for_each(v.begin(), v.end(), [MOD,&count1](int x){count1 += (x % MOD == 0);} );
-    cout << count1 << endl;
+    cout << "wocao:" << count1 << endl;
+
+    auto ff = [=]() -> int{return std::accumulate(v.begin(), v.end(), 0);};
+    cout << "ff:============================= " << ff() << endl;
 }
 
 /*
@@ -282,6 +286,40 @@ void test_mutex() {
 void test_condition_and_chrono_regex() {
 }
 
+void test_minmax() {
+    vector<int> v{3, 12 ,0, 34, 12, 23};
+    auto ret = std::minmax(1, 3);
+    cout << ret.first << " " << ret.second << endl;
+
+    auto ret1 = std::minmax_element(v.begin(), v.end());
+    cout << *ret1.first << " " << *ret1.second << endl;
+}
+
+class B {
+public:
+    int f(int &x, int &y) {
+        x = 13;
+        return x * y;
+    }
+};
+
+void test_bind() {
+
+    B *b = new B;
+    int x = 12, y = 13;
+    auto fff = std::bind(&B::f, b, x, y);
+    cout << fff() << " " << x << endl;
+    auto ffff = std::bind(&B::f, b, std::ref(x), y);
+    cout << ffff() << endl;
+    cout << x << endl;
+}
+
+void test_to_string() {
+    string s = std::to_string(100000.12345);
+    s = std::to_string(char('a'));
+    cout << s << endl;
+}
+
 int main()
 {
     test_start_pointer();
@@ -307,5 +345,11 @@ int main()
     test_mutex();
 
     test_condition_and_chrono_regex();
+
+    test_minmax();
+
+    test_bind();
+
+    test_to_string();
     return 0;
 }
