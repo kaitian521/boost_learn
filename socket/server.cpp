@@ -1,6 +1,7 @@
 /* A simple server in the internet domain using TCP
    The port number is passed as an argument */
 #include <stdio.h>
+#include <fcntl.h>
 #include <sys/select.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,8 +20,12 @@
 #include <cmath>
 #include <stdio.h>
 #include <algorithm>    // std::max
+#include <iostream>
+using namespace std;
 
 using namespace std;
+const int nn = 5000000;
+char s[nn];
 
 void error(char *msg)
 {
@@ -39,6 +44,15 @@ int main(int argc, char *argv[])
          exit(1);
      }
      sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	 int send_buffer = 1;
+	 setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (char*)send_buffer, sizeof(send_buffer));
+
+
+	 int val;
+
+	 val = fcntl(sockfd, F_GETFL, 0);
+	 fcntl(sockfd, F_SETFL, val | O_NONBLOCK);
+
 	 int yes = 1;
 	 int op ;
 	 if ( (op = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) ) < 0) {
@@ -95,20 +109,22 @@ int main(int argc, char *argv[])
 			 if (clients[i]) {
 				 maxFd = std::max(maxFd, clients[i]);
 				 FD_SET(clients[i], &readfds);
-				 printf("client %d is active", clients[i]);
+				 //printf("client %d is active\n", clients[i]);
 			 }
 		 }
 
 		 int ret = select(maxFd + 1, &readfds, NULL, NULL, NULL);
 
 		 if (ret < 0 && errno != EINTR) {
-			 printf("select error");
+			 printf("select error\n");
 			 continue;
 		 }
 
 		 if (FD_ISSET(sockfd, &readfds)) {
-			 printf("begin to accept socket %d...", sockfd);
+			 printf("begin to accept socket %d...\n", sockfd);
 			 int newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, (socklen_t*)&clilen);
+	 val = fcntl(newsockfd, F_GETFL, 0);
+	 fcntl(newsockfd, F_SETFL, val | O_NONBLOCK);
 			 for (int j = 0; j < 1024; j++) {
 				 if (clients[j] == 0) {
 					 clients[j] = newsockfd;
@@ -125,13 +141,27 @@ int main(int argc, char *argv[])
 					 int len;
 					 memset(buffer, 0, sizeof(buffer));
 					 if ( (len = read(clients[i],buffer,255)) == 0) {
-						 printf("client close connection...");
+						 printf("client close connection...\n");
 						 close(clients[i]);
 						 clients[i] = 0;
 					 }
-					 else {
+					 else if(len > 0){
 						  printf("Here is the message: %s\n",buffer);
-						  n = write(clients[i],"I got your message",18);
+						  strcpy(s, "I love U!!!");
+						  for (int j = 0; j < 500; j++) {
+						  	n = write(clients[i],s,nn);
+							//printf("write done!!!%d\n", j+1);
+						  }
+					  	 printf("write done!!!\n");
+
+					 }
+					 else {
+						 if (errno == EWOULDBLOCK) {
+							cout << "would block signal" << endl;
+						 }
+						 else {
+							 cout << "error when read" << endl;
+						 }
 					 }
 				 }
 			 }
