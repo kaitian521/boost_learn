@@ -1,0 +1,1 @@
+g++ asio_tcp_server.cpp -std=c++11 -o server -I/home/lishaokai/VoiceDemo/app/src/main/jni/asio-1.10.6/include
